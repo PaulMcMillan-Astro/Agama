@@ -8,8 +8,8 @@ Computation of actions and angles for axisymmetric systems, using two related me
 2) "Staeckel Fudge" approximation applicable for any axisymmetric potential.
 To avoid confusion, the latter is called simply "Fudge" in what follows.
 
-Most sub-steps are shared between the two methods; 
-only the computation of integrals of motion, and the auxiliary function that enters 
+Most sub-steps are shared between the two methods;
+only the computation of integrals of motion, and the auxiliary function that enters
 the expression for canonical momentum, are specific to each method.
 
 The implementation is inspired by the code written by Jason Sanders,
@@ -31,7 +31,7 @@ namespace actions {
     \return     actions for the given point, or Jr=Jz=NAN if the energy is positive.
 */
 Actions actionsAxisymStaeckel(
-    const potential::OblatePerfectEllipsoid& potential, 
+    const potential::OblatePerfectEllipsoid& potential,
     const coord::PosVelCyl& point);
 
 /** Find exact actions and angles in the Staeckel potential of oblate Perfect Ellipsoid.
@@ -41,7 +41,7 @@ Actions actionsAxisymStaeckel(
     \return     actions and angles for the given point, or Jr=Jz=NAN if the energy is positive.
 */
 ActionAngles actionAnglesAxisymStaeckel(
-    const potential::OblatePerfectEllipsoid& potential, 
+    const potential::OblatePerfectEllipsoid& potential,
     const coord::PosVelCyl& point,
     Frequencies* freq=NULL);
 
@@ -49,17 +49,17 @@ ActionAngles actionAnglesAxisymStaeckel(
     \param[in]  potential is the arbitrary axisymmetric potential.
     \param[in]  point     is the position/velocity point.
     \param[in]  focalDistance is the geometric parameter of best-fit coordinate system:
-    the accuracy of the method depends on this parameter, which should be estimated by one of 
+    the accuracy of the method depends on this parameter, which should be estimated by one of
     the methods from actions_focal_distance_finder.h.
     \return     actions for the given point, or Jr=Jz=NAN if the energy is positive.
     \throw      std::invalid_argument exception if the potential is not axisymmetric.
 */
 Actions actionsAxisymFudge(
-    const potential::BasePotential& potential, 
+    const potential::BasePotential& potential,
     const coord::PosVelCyl& point,
     double focalDistance);
 
-/** Find approximate actions and angles in a given axisymmetric potential, 
+/** Find approximate actions and angles in a given axisymmetric potential,
     using the Staeckel Fudge method.
     \param[in]  potential is the arbitrary axisymmetric potential.
     \param[in]  point     is the position/velocity point.
@@ -69,10 +69,26 @@ Actions actionsAxisymFudge(
     \throw      std::invalid_argument exception if the potential is not axisymmetric.
 */
 ActionAngles actionAnglesAxisymFudge(
-    const potential::BasePotential& potential, 
-    const coord::PosVelCyl& point, 
-    double focalDistance, 
+    const potential::BasePotential& potential,
+    const coord::PosVelCyl& point,
+    double focalDistance,
     Frequencies* freq=NULL);
+
+/** Find approximate actions, angles and orbit parameters in a given axisymmetric potential,
+   using the Staeckel Fudge method.
+   \param[in]  potential is the arbitrary axisymmetric potential.
+   \param[in]  point     is the position/velocity point.
+   \param[in]  focalDistance is the geometric parameter of best-fit coordinate system.
+   \param[out] freq      if not NULL, store the frequencies of motion in this variable.
+   \return     actions and angles for the given point, or Jr=Jz=NAN if the energy is positive.
+   \throw      std::invalid_argument exception if the potential is not axisymmetric.
+*/
+ActionAnglesOrbitParameters actionAnglesOrbitParametersAxisymFudge(
+   const potential::BasePotential& potential,
+   const coord::PosVelCyl& point,
+   double focalDistance,
+   Frequencies* freq=NULL);
+
 
 ///@}
 /// \name  ------- Class interface to action/angle finders  -------
@@ -90,14 +106,22 @@ public:
     virtual ActionAngles actionAngles(const coord::PosVelCyl& point, Frequencies* freq=NULL) const {
         return actionAnglesAxisymStaeckel(*pot, point, freq); }
 
+    virtual ActionAnglesOrbitParameters actionAnglesOrbitParameters(const coord::PosVelCyl& point,
+                                                                    Frequencies* freq=NULL) const
+     {
+         return ActionAnglesOrbitParameters(actionAngles(point, freq),
+                                            OrbitParameters(0,0,0));
+     }
+
+
 private:
     const potential::PtrOblatePerfectEllipsoid pot;  ///< the potential in which actions are computed
 };
 
 /** Action/angle finder for a generic axisymmetric potential, based on Staeckel Fudge approximation.
-    It is more suitable for massive computation in a fixed potential than just using 
-    the standalone routines, because it estimates the focal distance using a pre-computed 
-    interpolation grid, rather than doing it individually for each point. This results in 
+    It is more suitable for massive computation in a fixed potential than just using
+    the standalone routines, because it estimates the focal distance using a pre-computed
+    interpolation grid, rather than doing it individually for each point. This results in
     a considerable speedup in action computation, for a minor overhead during initialization.
     Additionally, it may set up an interpolation table for actions as functions of three integrals
     of motion (one of them being approximate), which speeds up the evaluation by another order of
@@ -119,7 +143,10 @@ public:
     virtual ActionAngles actionAngles(const coord::PosVelCyl& point, Frequencies* freq=NULL) const {
         return actionAnglesAxisymFudge(*pot, point, focalDistance(point), freq);
     }
-
+    virtual ActionAnglesOrbitParameters actionAnglesOrbitParameters(const coord::PosVelCyl& point,
+                                                                    Frequencies* freq=NULL) const {
+         return actionAnglesOrbitParametersAxisymFudge(*pot, point, focalDistance(point), freq);
+     }
     /** return the best-suitable focal distance for the given point, obtained by interpolation */
     double focalDistance(const coord::PosVelCyl& point) const;
 

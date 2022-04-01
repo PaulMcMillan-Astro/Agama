@@ -28,10 +28,34 @@ struct Angles {
     Angles(double tr, double tz, double tphi) : thetar(tr), thetaz(tz), thetaphi(tphi) {};
 };
 
+/** Auxiliary orbital parmeters found using method of Mackereth & Bovy */
+struct OrbitParameters {
+    double rperi; ///< pericentre estimate
+    double rapo;  ///< apocentre estimate
+    double zmax;  ///< maximum height estimate
+    OrbitParameters() {};
+    OrbitParameters(double rp,double ra,double zm) : rperi(rp), rapo(ra), zmax(zm) {};
+};
+
 /** A combination of both actions and angles */
 struct ActionAngles: Actions, Angles {
     ActionAngles() {};
     ActionAngles(const Actions& acts, const Angles& angs) : Actions(acts), Angles(angs) {};
+};
+
+/** A combination of actions, angles and auxiliaries */
+struct ActionAnglesOrbitParameters: Actions, Angles, OrbitParameters {
+    ActionAnglesOrbitParameters() {};
+    ActionAnglesOrbitParameters(const Actions& acts,
+                          const Angles& angs,
+                          const OrbitParameters& aux) :
+                          Actions(acts), Angles(angs), OrbitParameters(aux) {};
+
+    ActionAnglesOrbitParameters(const ActionAngles& actangs,
+                          const OrbitParameters& aux) :
+                          Actions(actangs.Jr,actangs.Jz,actangs.Jphi),
+                          Angles(actangs.thetar, actangs.thetaz, actangs.thetaphi),
+                          OrbitParameters(aux) {};
 };
 
 /** Frequencies of motion (Omega = dH/dJ) */
@@ -69,6 +93,13 @@ public:
     /** Evaluate actions and angles for a given position/velocity point in cylindrical coordinates;
         if the output argument freq!=NULL, also store the frequencies */
     virtual ActionAngles actionAngles(const coord::PosVelCyl& point, Frequencies* freq=NULL) const = 0;
+    /** Evaluate actions, angles and auxiliary values for a given position/velocity point in cylindrical coordinates;
+        if the output argument freq!=NULL, also store the frequencies */
+    virtual ActionAnglesOrbitParameters actionAnglesOrbitParameters(const coord::PosVelCyl& point, Frequencies* freq=NULL) const =0;
+    /*{
+        return ActionAnglesAuxiliary(actionAngles(point, freq),
+                                     AuxiliaryOrbitParameters(0,0,0));
+    }*/
 
 private:
     /// disable copy constructor and assignment operator

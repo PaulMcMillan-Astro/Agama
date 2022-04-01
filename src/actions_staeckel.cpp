@@ -55,8 +55,8 @@ struct AxisymActionDerivatives {
 };
 
 /** Derivatives of integrals of motion over actions (do not depend on angles).
-    Note that dE/dJ are the frequencies of oscillations in three directions, 
-    so that we reuse the `Frequencies` struct members (Omega***), 
+    Note that dE/dJ are the frequencies of oscillations in three directions,
+    so that we reuse the `Frequencies` struct members (Omega***),
     and add other derivatives with a somewhat different naming convention. */
 struct AxisymIntDerivatives: public Frequencies {
     double dI3dJr, dI3dJz, dI3dJphi, dLzdJr, dLzdJz, dLzdJphi;
@@ -71,9 +71,9 @@ struct AxisymGenFuncDerivatives {
     integrals of motion, and reference to the potential,
     shared between Axisymmetric Staeckel  and Axisymmetric Fudge action finders;
     only the coordinates and the two classical integrals are in common between them.
-    It also implements the IFunction interface, providing the "auxiliary function" 
+    It also implements the IFunction interface, providing the "auxiliary function"
     that is used in finding the integration limits and computing actions and angles;
-    this function F(tau) is related to the canonical momentum p(tau)  as 
+    this function F(tau) is related to the canonical momentum p(tau)  as
     \f$  p(tau)^2 = F(tau) / (2*(tau+alpha)^2*(tau+gamma))  \f$,
     and the actual implementation of this function is specific to each descendant class.
 */
@@ -90,7 +90,7 @@ public:
 
 // ------ SPECIALIZED functions for Staeckel action finder -------
 
-/** parameters of potential, integrals of motion, and prolate spheroidal coordinates 
+/** parameters of potential, integrals of motion, and prolate spheroidal coordinates
     SPECIALIZED for the Axisymmetric Staeckel action finder */
 class AxisymFunctionStaeckel: public AxisymFunctionBase {
 public:
@@ -99,18 +99,18 @@ public:
         const math::IFunction& _fncG) :
         AxisymFunctionBase(_point, _E, _Lz, _I3), fncG(_fncG) {};
 
-    /** auxiliary function that enters the definition of canonical momentum for 
+    /** auxiliary function that enters the definition of canonical momentum for
         for the Staeckel potential: it is the numerator of eq.50 in de Zeeuw(1985);
         the argument tau is replaced by tau+gamma >= 0. */
-    virtual void evalDeriv(const double tauplusgamma, 
+    virtual void evalDeriv(const double tauplusgamma,
         double* value=0, double* deriv=0, double* deriv2=0) const;
 };
 
-/** compute integrals of motion in the Staeckel potential of an oblate perfect ellipsoid, 
-    together with the coordinates in its prolate spheroidal coordinate system 
+/** compute integrals of motion in the Staeckel potential of an oblate perfect ellipsoid,
+    together with the coordinates in its prolate spheroidal coordinate system
 */
 AxisymFunctionStaeckel findIntegralsOfMotionOblatePerfectEllipsoid(
-    const potential::OblatePerfectEllipsoid& potential, 
+    const potential::OblatePerfectEllipsoid& potential,
     const coord::PosVelCyl& point)
 {
     double E = totalEnergy(potential, point);
@@ -125,15 +125,15 @@ AxisymFunctionStaeckel findIntegralsOfMotionOblatePerfectEllipsoid(
     else   // general case: eq.3 in Sanders(2012)
         I3 = fmax(0,
             pprol.lambda * (E - pow_2(Lz) / 2 / (pprol.lambda - coordsys.Delta2) + Glambda) -
-            pow_2( pprol.lambdadot * (pprol.lambda - fabs(pprol.nu)) ) / 
+            pow_2( pprol.lambdadot * (pprol.lambda - fabs(pprol.nu)) ) /
             (8 * (pprol.lambda - coordsys.Delta2) * pprol.lambda) );
     return AxisymFunctionStaeckel(pprol, E, Lz, I3, potential);
 }
 
-/** auxiliary function that enters the definition of canonical momentum for 
+/** auxiliary function that enters the definition of canonical momentum for
     for the Staeckel potential: it is the numerator of eq.50 in de Zeeuw(1985);
     except that in our convention `tau` >= 0 is equivalent to `tau+gamma` from that paper. */
-void AxisymFunctionStaeckel::evalDeriv(const double tau, 
+void AxisymFunctionStaeckel::evalDeriv(const double tau,
     double* val, double* der, double* der2) const
 {
     assert(tau>=0);
@@ -150,7 +150,7 @@ void AxisymFunctionStaeckel::evalDeriv(const double tau,
 
 // -------- SPECIALIZED functions for the Axisymmetric Fudge action finder --------
 
-/** parameters of potential, integrals of motion, and prolate spheroidal coordinates 
+/** parameters of potential, integrals of motion, and prolate spheroidal coordinates
     SPECIALIZED for the Axisymmetric Fudge action finder */
 class AxisymFunctionFudge: public AxisymFunctionBase {
 public:
@@ -162,20 +162,20 @@ public:
 
     /** Auxiliary function F analogous to that of Staeckel action finder:
         namely, the momentum is given by  p_tau^2 = F(tau) / [2 tau (tau-delta)^2],
-        where    0 <= tau < delta    for the  nu-component of momentum, 
+        where    0 <= tau < delta    for the  nu-component of momentum,
         and  delta <= tau < infinity for the  lambda-component of momentum.
         For numerical convenience, tau is replaced by x=tau+gamma. */
-    virtual void evalDeriv(const double tauplusgamma, 
+    virtual void evalDeriv(const double tauplusgamma,
         double* value=0, double* deriv=0, double* deriv2=0) const;
 };
 
-/** compute true (E, Lz) and approximate (Ilambda, Inu) integrals of motion in an arbitrary 
-    potential used for the Staeckel Fudge, 
-    together with the coordinates in its prolate spheroidal coordinate system 
+/** compute true (E, Lz) and approximate (Ilambda, Inu) integrals of motion in an arbitrary
+    potential used for the Staeckel Fudge,
+    together with the coordinates in its prolate spheroidal coordinate system
 */
 AxisymFunctionFudge findIntegralsOfMotionAxisymFudge(
-    const potential::BasePotential& potential, 
-    const coord::PosVelCyl& point, 
+    const potential::BasePotential& potential,
+    const coord::PosVelCyl& point,
     const coord::ProlSph& coordsys)
 {
     const coord::PosVelProlSph pprol = coord::toPosVel<coord::Cyl, coord::ProlSph>(point, coordsys);
@@ -196,10 +196,10 @@ AxisymFunctionFudge findIntegralsOfMotionAxisymFudge(
 
 /** Auxiliary function F analogous to that of Staeckel action finder:
     namely, the momentum is given by  p_tau^2 = F(tau) / (2*(tau-delta)^2*tau),
-    where    0 <= tau <= delta    for the  nu-component of momentum, 
+    where    0 <= tau <= delta    for the  nu-component of momentum,
     and  delta <= tau < infinity  for the  lambda-component of momentum.
 */
-void AxisymFunctionFudge::evalDeriv(const double tau, 
+void AxisymFunctionFudge::evalDeriv(const double tau,
     double* val, double* der, double* der2) const
 {
     assert(tau>=0);
@@ -219,7 +219,7 @@ void AxisymFunctionFudge::evalDeriv(const double tau,
     coord::PosDerivT  <coord::ProlSph, coord::Cyl> coordDeriv;
     coord::PosDeriv2T <coord::ProlSph, coord::Cyl> coordDeriv2;
     const coord::PosProlSph posProl(lambda, nu, point.phi, point.coordsys);
-    const coord::PosCyl posCyl = der || der2? 
+    const coord::PosCyl posCyl = der || der2?
         coord::toPosDeriv<coord::ProlSph, coord::Cyl>(posProl, &coordDeriv, der2? &coordDeriv2 : NULL) :
         coord::toPosCyl(posProl);
     double Phi;
@@ -233,16 +233,16 @@ void AxisymFunctionFudge::evalDeriv(const double tau,
         coord::GradProlSph gradProl = coord::toGrad<coord::Cyl, coord::ProlSph> (gradCyl, coordDeriv);
         double dPhidtau = (tau >= point.coordsys.Delta2) ? gradProl.dlambda : gradProl.dnu;
         if(der)
-            *der = E * (tau+tauminusdelta) - pow_2(Lz)/2 - I 
+            *der = E * (tau+tauminusdelta) - pow_2(Lz)/2 - I
                  - (mult+tauminusdelta) * Phi - (tauminusdelta!=0 ? tauminusdelta * mult * dPhidtau : 0);
         if(der2) {
             double d2Phidtau2 = (tau >= point.coordsys.Delta2) ?
                 // d2Phi/dlambda^2
-                hessCyl.dR2 * pow_2(coordDeriv.dRdlambda) + hessCyl.dz2 * pow_2(coordDeriv.dzdlambda) + 
+                hessCyl.dR2 * pow_2(coordDeriv.dRdlambda) + hessCyl.dz2 * pow_2(coordDeriv.dzdlambda) +
                 2*hessCyl.dRdz * coordDeriv.dRdlambda*coordDeriv.dzdlambda +
                 gradCyl.dR * coordDeriv2.d2Rdlambda2 + gradCyl.dz * coordDeriv2.d2zdlambda2
             :   // d2Phi/dnu^2
-                hessCyl.dR2 * pow_2(coordDeriv.dRdnu) + hessCyl.dz2 * pow_2(coordDeriv.dzdnu) + 
+                hessCyl.dR2 * pow_2(coordDeriv.dRdnu) + hessCyl.dz2 * pow_2(coordDeriv.dzdnu) +
                 2*hessCyl.dRdz * coordDeriv.dRdnu*coordDeriv.dzdnu +
                 gradCyl.dR * coordDeriv2.d2Rdnu2 + gradCyl.dz * coordDeriv2.d2zdnu2;
             *der2 = 2 * (E - Phi - (mult+tauminusdelta) * dPhidtau)
@@ -269,7 +269,7 @@ public:
         fnc.evalDeriv(nu_max, NULL, &dfdnu_at_nu_max);
     }
 
-    /** integrand for the expressions for actions and their derivatives 
+    /** integrand for the expressions for actions and their derivatives
         (e.g.Sanders 2012, eqs. A1, A4-A12).  It uses the auxiliary function to compute momentum,
         and multiplies it by some powers of (tau-delta) and tau.
     */
@@ -323,15 +323,15 @@ public:
     }
 };
 
-/** A simple function that facilitates locating the root of auxiliary function 
-    on a semi-infinite interval for lambda: instead of F(tau) we consider 
+/** A simple function that facilitates locating the root of auxiliary function
+    on a semi-infinite interval for lambda: instead of F(tau) we consider
     F1(tau)=F(tau)/tau^2, which tends to a finite negative limit as tau tends to infinity. */
 class AxisymScaledForRootfinder: public math::IFunction {
 public:
     const AxisymFunctionBase& fnc;
     explicit AxisymScaledForRootfinder(const AxisymFunctionBase& d) : fnc(d) {};
     virtual unsigned int numDerivs() const { return fnc.numDerivs(); }
-    virtual void evalDeriv(const double tau, 
+    virtual void evalDeriv(const double tau,
         double* val=0, double* der=0, double* der2=0) const
     {
         assert(tau>=0);
@@ -353,7 +353,7 @@ public:
     }
 };
 
-/** Compute the intervals of tau for which p^2(tau)>=0, 
+/** Compute the intervals of tau for which p^2(tau)>=0,
     where  0    = nu_min     <= tau <= nu_max     <= delta    is the interval for the "nu" branch,
     and  delta <= lambda_min <= tau <= lambda_max < infinity  is the interval for "lambda".
 */
@@ -377,7 +377,7 @@ AxisymIntLimits findIntegrationLimitsAxisym(const AxisymFunctionBase& fnc)
         if(fnc(deltaminus)<0) {  // box orbit: f<0 at some interval left of delta
             if(f_zero>0)         // there must be a range of nu where the function is positive
                 nu_upper = deltaminus;
-            else 
+            else
                 lim.nu_max = lim.nu_min;
         } else
             lim.nu_max = delta;
@@ -387,7 +387,7 @@ AxisymIntLimits findIntegrationLimitsAxisym(const AxisymFunctionBase& fnc)
             lim.lambda_min = delta;
     }
 
-    if(!isFinite(lim.nu_max)) 
+    if(!isFinite(lim.nu_max))
     {   // find range for J_nu (i.e. J_z) if it has not been determined at the previous stage
         if(f_zero>0)
             lim.nu_max = math::findRoot(fnc, fabs(fnc.point.nu), nu_upper, ACCURACY_RANGE);
@@ -416,7 +416,7 @@ AxisymIntLimits findIntegrationLimitsAxisym(const AxisymFunctionBase& fnc)
         // so at least one of the endpoints may be assigned immediately
         if(df_lambda>=0) {
             lim.lambda_min = fnc.point.lambda;
-        } 
+        }
         if(df_lambda<=0) {
             lim.lambda_max = fnc.point.lambda;
             if(fnc.point.lambda == delta)  // can't be lower than that! means that the range is zero
@@ -452,7 +452,7 @@ AxisymIntLimits findIntegrationLimitsAxisym(const AxisymFunctionBase& fnc)
             lim.lambda_min = lim.lambda_max = fnc.point.lambda;
         }
     }
-    if(!isFinite(lim.lambda_min)) {  // not yet determined 
+    if(!isFinite(lim.lambda_min)) {  // not yet determined
         lim.lambda_min = math::findRoot(fnc, lambda_lower, lambda_pos, ACCURACY_RANGE);
     }
     if(!isFinite(lim.lambda_max)) {
@@ -499,21 +499,21 @@ AxisymActionDerivatives computeActionDerivatives(
     // derivatives w.r.t. E
     integrand.a = AxisymIntegrand::aminus1;
     integrand.c = AxisymIntegrand::czero;
-    der.dJrdE = (lim.lambda_min==lim.lambda_max ? 
+    der.dJrdE = (lim.lambda_min==lim.lambda_max ?
         integrand.limitingIntegralValue(lim.lambda_min) :
         math::integrateGL(transf_l, 0, 1, lim.integrOrder) ) / (4*M_PI);
     der.dJzdE = math::integrateGL(transf_n, 0, 1, lim.integrOrder) / (2*M_PI);
     // derivatives w.r.t. I3
     integrand.a = AxisymIntegrand::aminus1;
     integrand.c = AxisymIntegrand::cminus1;
-    der.dJrdI3 = - (lim.lambda_min==lim.lambda_max ? 
+    der.dJrdI3 = - (lim.lambda_min==lim.lambda_max ?
         integrand.limitingIntegralValue(lim.lambda_min) :
         math::integrateGL(transf_l, 0, 1, lim.integrOrder) ) / (4*M_PI);
     der.dJzdI3 = -math::integrateGL(transf_n, 0, 1, lim.integrOrder) / (2*M_PI);
     // derivatives w.r.t. Lz
     integrand.a = AxisymIntegrand::aminus2;
     integrand.c = AxisymIntegrand::czero;
-    der.dJrdLz = -fnc.Lz * (lim.lambda_min==lim.lambda_max ? 
+    der.dJrdLz = -fnc.Lz * (lim.lambda_min==lim.lambda_max ?
         integrand.limitingIntegralValue(lim.lambda_min) :
         math::integrateGL(transf_l, 0, 1, lim.integrOrder) ) / (4*M_PI);
     // the following integral is split into the analytically computed singular part
@@ -581,7 +581,7 @@ AxisymGenFuncDerivatives computeGenFuncDerivatives(
     // derivatives w.r.t. I3
     integrand.a = AxisymIntegrand::aminus1;
     integrand.c = AxisymIntegrand::cminus1;
-    der.dSdI3 = 
+    der.dSdI3 =
         signldot * -math::integrateGL(transf_l, 0, yl, lim.integrOrder) / 4
       + signndot * -math::integrateGL(transf_n, 0, yn, lim.integrOrder) / 4;
     // derivatives w.r.t. Lz
@@ -693,7 +693,7 @@ Actions actionsAxisymFudge(const potential::BasePotential& potential,
     return computeActions(fnc, lim);
 }
 
-ActionAngles actionAnglesAxisymFudge(const potential::BasePotential& potential, 
+ActionAngles actionAnglesAxisymFudge(const potential::BasePotential& potential,
     const coord::PosVelCyl& point, double focalDistance, Frequencies* freq)
 {
     if(!isAxisymmetric(potential))
@@ -708,6 +708,35 @@ ActionAngles actionAnglesAxisymFudge(const potential::BasePotential& potential,
     }
     const AxisymIntLimits lim = findIntegrationLimitsAxisym(fnc);
     return computeActionAngles(fnc, lim, freq);
+}
+
+ActionAnglesOrbitParameters actionAnglesOrbitParametersAxisymFudge(const potential::BasePotential& potential,
+    const coord::PosVelCyl& point, double focalDistance, Frequencies* freq)
+{
+    if(!isAxisymmetric(potential))
+        throw std::invalid_argument("Fudge approximation only works for axisymmetric potentials");
+    if(focalDistance<=0)
+        focalDistance = fmax(point.R, 1.) * 1e-4;   // this is a temporary workaround!
+    const coord::ProlSph coordsys(focalDistance);
+    const AxisymFunctionFudge fnc = findIntegralsOfMotionAxisymFudge(potential, point, coordsys);
+    if(!isFinite(fnc.E+fnc.I3+fnc.Lz) || fnc.E>=0) {
+        if(freq) freq->Omegar = freq->Omegaz = freq->Omegaphi = NAN;
+        return ActionAnglesOrbitParameters(Actions(NAN, NAN, fnc.Lz), 
+                                           Angles(NAN, NAN, NAN),
+                                           OrbitParameters(NAN,NAN,NAN));
+    }
+    const AxisymIntLimits lim = findIntegrationLimitsAxisym(fnc);
+    // So I think I can just get the positions associated with the limits here
+    coord::PosProlSph RminProl(lim.lambda_min, lim.nu_max,0., coordsys),
+         RmaxProl(lim.lambda_max, lim.nu_min,0., coordsys),
+         ZmaxProl(lim.lambda_max, lim.nu_max,0., coordsys);
+    coord::PosCyl RminCyl = coord::toPos<coord::ProlSph,coord::Cyl>(RminProl),
+             RmaxCyl = coord::toPos<coord::ProlSph,coord::Cyl>(RmaxProl),
+             ZmaxCyl = coord::toPos<coord::ProlSph,coord::Cyl>(ZmaxProl);
+    ActionAngles outputAA = computeActionAngles(fnc, lim, freq);
+    return ActionAnglesOrbitParameters(Actions(outputAA.Jr,outputAA.Jz,outputAA.Jphi),
+                                  Angles(outputAA.thetar,outputAA.thetaz,outputAA.thetaphi),
+                                  OrbitParameters(RminCyl.R,RmaxCyl.R,ZmaxCyl.z));
 }
 
 

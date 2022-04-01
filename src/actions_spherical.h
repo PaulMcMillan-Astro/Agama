@@ -29,7 +29,7 @@ Actions actionsSpherical(
     \return     actions and angles for the given point, or Jr=NAN if the energy is positive;
     \throw      std::invalid_argument exception if the potential is not spherical
     or some other error occurs.
-*/ 
+*/
 ActionAngles actionAnglesSpherical(
     const potential::BasePotential& potential,
     const coord::PosVelCyl& point,
@@ -66,6 +66,8 @@ public:
 
     virtual Actions actions(const coord::PosVelCyl& point) const;
     virtual ActionAngles actionAngles(const coord::PosVelCyl& point, Frequencies* freq=NULL) const;
+    virtual ActionAnglesOrbitParameters actionAnglesOrbitParameters(const coord::PosVelCyl& point, Frequencies* freq=NULL) const;
+
     virtual coord::PosVelSphMod map(
         const ActionAngles& actAng,
         Frequencies* freq=NULL,

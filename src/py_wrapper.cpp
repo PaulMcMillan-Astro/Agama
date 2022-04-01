@@ -837,7 +837,7 @@ particles::ParticleArray<ParticleT> convertParticles(PyObject* particles_obj)
     All these situations are handled by classes derived from this interface.
     The constructor of the base class BatchFunction takes care of analyzing the input, determining
     whether this is one or several points, and ensures  that each point has a correct length M.
-    Constructors of derived classes, in turn, allocate the output objects or a tuple of objects 
+    Constructors of derived classes, in turn, allocate the output objects or a tuple of objects
     of appropriate shape. They typically invoke auxiliary routines allocateOutput<> defined below.
     The run() method of the base class loops over input points and calls a virtual method
     processPoint() for each of them, which must be implemented in derived classes: it carries out
@@ -861,7 +861,7 @@ public:
     /** Constructor of the base class only analyzes the input object, determines the number
         of input points and ensures that the length of each point equals inputLength.
         \param[in]  inputLength  is the required length of each input point (M);
-        \param[in]  inputObject  is the Python object (scalar, tuple, list or array) 
+        \param[in]  inputObject  is the Python object (scalar, tuple, list or array)
         containing one or more points.
         When the inputObject is parsed successfully, the member variable inputBuffer points to the
         raw buffer containing the single scalar point or the first element of the input array;
@@ -1101,7 +1101,7 @@ PyObject* allocateOutput(npy_intp numPoints, double* buffer[1]=NULL, int C=0)
     \tparam DIM1 - last dimension of the first output array.
     \tparam DIM2 - last dimension of the second output array.
     Other parameters have the same meaning as for the previous function,
-    except that buffer[] should be a pointer to an array of two pointers (double*), 
+    except that buffer[] should be a pointer to an array of two pointers (double*),
     which will contain raw buffers of both elements of the tuple.
 */
 template<int DIM1, int DIM2>
@@ -1137,6 +1137,33 @@ PyObject* allocateOutput(npy_intp numPoints, double* buffer[3]=NULL, int C=0)
         Py_XDECREF(elem1);
         Py_XDECREF(elem2);
         Py_XDECREF(elem3);
+        return NULL;
+    }
+}
+
+
+/** Helper routine for allocating a tuple of four output arrays for a class derived from BatchFunction.
+    \tparam DIM1 - last dimension of the first output array;
+    \tparam DIM2 - last dimension of the second output array.
+    \tparam DIM3 - last dimension of the third output array.
+    \tparam DIM4 - last dimension of the fourth output array.
+    Other parameters have the same meaning as for the previous function,
+    except that buffer should have 4 elements.
+*/
+template<int DIM1, int DIM2, int DIM3, int DIM4>
+PyObject* allocateOutput(npy_intp numPoints, double* buffer[4]=NULL, int C=0)
+{
+    PyObject *elem1 = allocateOutput<DIM1>(numPoints, buffer, C);
+    PyObject *elem2 = allocateOutput<DIM2>(numPoints, buffer? &buffer[1] : NULL, C);
+    PyObject *elem3 = allocateOutput<DIM3>(numPoints, buffer? &buffer[2] : NULL, C);
+    PyObject *elem4 = allocateOutput<DIM4>(numPoints, buffer? &buffer[3] : NULL, C);
+    if(elem1 && elem2 && elem3 && elem4)
+        return Py_BuildValue("NNNN", elem1, elem2, elem3, elem4);
+    else {
+        Py_XDECREF(elem1);
+        Py_XDECREF(elem2);
+        Py_XDECREF(elem3);
+        Py_XDECREF(elem4);
         return NULL;
     }
 }
@@ -2832,23 +2859,54 @@ void formatActionsAnglesFreqs(const actions::ActionAngles& actang, const actions
     outputFreqs[2] = freq.Omegaphi * convF;
 }
 
+
+void formatActionsAnglesFreqsOrbitParameters(const actions::ActionAnglesOrbitParameters& actang,
+    const actions::Frequencies& freq,
+    double* outputActions, double* outputAngles, double* outputOrbPar, double* outputFreqs)
+{
+    formatActions(actang, outputActions);
+    outputAngles[0] = actang.thetar;
+    outputAngles[1] = actang.thetaz;
+    outputAngles[2] = actang.thetaphi;
+    // unit of orbitparameters is L
+    const double convOP = 1 / (conv->lengthUnit);
+    outputOrbPar[0] = actang.rperi * convOP;
+    outputOrbPar[1] = actang.rapo  * convOP;
+    outputOrbPar[2] = actang.zmax  * convOP;
+    // unit of frequency is V/L
+    const double convF = conv->lengthUnit / conv->velocityUnit;
+    outputFreqs[0] = freq.Omegar   * convF;
+    outputFreqs[1] = freq.Omegaz   * convF;
+    outputFreqs[2] = freq.Omegaphi * convF;
+}
+
 /// compute the actions and optionally angles and frequencies, using an action finder
-template<bool ANGLES>
+template<bool ANGLES, bool ORBITPARAMETERS>
 class FncActions: public BatchFunction {
     const actions::BaseActionFinder& af;
-    double* outputBuffers[3];
+    double* outputBuffers[4];
 public:
     FncActions(PyObject* input, const actions::BaseActionFinder& _af) :
         BatchFunction(/*input length*/ 6, input), af(_af)
     {
-        outputObject = ANGLES ?
+        outputObject = ANGLES && ORBITPARAMETERS ?
+            allocateOutput<3, 3, 3, 3>(numPoints, outputBuffers) :  // actions, angles, orbitparameters, frequencies
+            ANGLES ?
             allocateOutput<3, 3, 3>(numPoints, outputBuffers) :  // actions, angles, frequencies
             allocateOutput<3      >(numPoints, outputBuffers);   // just actions
     }
     virtual void processPoint(npy_intp indexPoint)
     {
         const coord::PosVelCyl point = coord::toPosVelCyl(convertPosVel(&inputBuffer[indexPoint*6]));
-        if(ANGLES) {
+        if(ANGLES && ORBITPARAMETERS) {
+          actions::Frequencies freq;
+          actions::ActionAnglesOrbitParameters actangorb = af.actionAnglesOrbitParameters(point, &freq);
+          formatActionsAnglesFreqsOrbitParameters(actangorb, freq, /*output actions*/ &outputBuffers[0][indexPoint*3],
+              /*angles*/ &outputBuffers[1][indexPoint*3],
+              /*orbitparameters*/ &outputBuffers[2][indexPoint*3],
+              /*freq*/ &outputBuffers[3][indexPoint*3]);
+        }
+        else if(ANGLES) {
             actions::Frequencies freq;
             actions::ActionAngles actang = af.actionAngles(point, &freq);
             formatActionsAnglesFreqs(actang, freq, /*output actions*/ &outputBuffers[0][indexPoint*3],
@@ -2864,19 +2922,22 @@ PyObject* ActionFinder_value(PyObject* self, PyObject* args, PyObject* namedArgs
         PyErr_SetString(PyExc_RuntimeError, "ActionFinder object is not properly initialized");
         return NULL;
     }
-    static const char* keywords[] = {"point", "angles", NULL};
-    PyObject *points_obj = NULL, *angles = NULL;
-    if(!PyArg_ParseTupleAndKeywords(args, namedArgs, "O|O", const_cast<char**>(keywords),
-        &points_obj, &angles))
+    static const char* keywords[] = {"point", "angles", "orbitparameters", NULL};
+    PyObject *points_obj = NULL, *angles = NULL, *orbitparameters = NULL;
+    if(!PyArg_ParseTupleAndKeywords(args, namedArgs, "O|OO", const_cast<char**>(keywords),
+        &points_obj, &angles, &orbitparameters))
     {
         PyErr_SetString(PyExc_TypeError,
-            "Must provide an array of points and optionally the 'angles=True/False' flag");
+            "Must provide an array of points and optionally the 'angles=True/False' and 'orbitparameters=True/False' flag");
         return NULL;
     }
-    if(toBool(angles))
-        return FncActions<true >(points_obj, *((ActionFinderObject*)self)->af).run(/*chunk*/64);
+    // To date there is no functionality to give orbit parameters and not angles
+    if(toBool(orbitparameters))
+        return FncActions<true, true >(points_obj, *((ActionFinderObject*)self)->af).run(/*chunk*/64);
+    else if(toBool(angles))
+        return FncActions<true, false>(points_obj, *((ActionFinderObject*)self)->af).run(/*chunk*/64);
     else
-        return FncActions<false>(points_obj, *((ActionFinderObject*)self)->af).run(/*chunk*/64);
+        return FncActions<false,false>(points_obj, *((ActionFinderObject*)self)->af).run(/*chunk*/64);
 }
 
 static PyTypeObject ActionFinderType = {
@@ -4017,7 +4078,7 @@ PyObject* GalaxyModel_moments(GalaxyModelObject* self, PyObject* args, PyObject*
         &points_obj, &dens_flag, &vel_flag, &vel2_flag, &separate_flag, &alpha, &beta, &gamma))
         return NULL;
     bool dens = toBool(dens_flag, true), vel = toBool(vel_flag, false), vel2 = toBool(vel2_flag, true);
-    
+
     // retrieve the input point(s) and check the array dimensions
     PyArrayObject *points_arr =
         (PyArrayObject*) PyArray_FROM_OTF(points_obj, NPY_DOUBLE, NPY_ARRAY_IN_ARRAY);

@@ -60,7 +60,7 @@ inline double unscaleE(const double scaledE, const double invPhi0, /*output*/ do
 }
 
 /// compute the radial action from a 2d interpolation table as in ActionFinderSpherical
-double computeJr(double E, double scaledE, double dEdscaledE, double L, 
+double computeJr(double E, double scaledE, double dEdscaledE, double L,
     const potential::Interpolator& pot, const math::BaseInterpolator2d& intJr,
     /*optional output*/double *Omegar, double *Omegaz)
 {
@@ -467,7 +467,7 @@ math::QuinticSpline2d createActionInterpolator(const potential::Interpolator2d& 
         strm << "# X=scaledE    \tY=L/Lcirc      \tW=Jr/(Lcirc-L) \tdW/dX          \tdW/dY          \n";
         for(int iE=0; iE<sizeE; iE++) {
             for(int iL=0; iL<sizeL; iL++) {
-                strm << 
+                strm <<
                 utils::pp(gridX  [iE],     15) + "\t" +
                 utils::pp(gridY  [iL],     15) + "\t" +
                 utils::pp(gridW  (iE, iL), 15) + "\t" +
@@ -522,7 +522,7 @@ math::QuinticSpline2d createEnergyInterpolator(const potential::Interpolator2d& 
             double Lc = Rc  * sqrt( Rc * dPhi);  // exp(P) = Jr+L
             gridP[iP] = log(Lc);
             for(int iQ=0; iQ<sizeQ; iQ++) {
-                double L = Lc * gridQ[iQ], Jr = Lc * (1-gridQ[iQ]);                
+                double L = Lc * gridQ[iQ], Jr = Lc * (1-gridQ[iQ]);
                 // radius of a circular orbit with angular momentum equal to L
                 double Rcirc = iQ<sizeQ-1 ? pot.R_from_Lz(L) : Rc;
                 // initial guess (more precisely, lower bound) for Hamiltonian
@@ -570,7 +570,7 @@ math::QuinticSpline2d createEnergyInterpolator(const potential::Interpolator2d& 
         strm << "# P=ln(Jr+L)   \tQ=L/(Jr+L)     \tX=scaledE      \tdX/dP          \tdX/dQ          \n";
         for(int iP=0; iP<sizeP; iP++) {
             for(int iQ=0; iQ<sizeQ; iQ++) {
-                strm << 
+                strm <<
                 utils::pp(gridP  [iP],     15) + "\t" +
                 utils::pp(gridQ  [iQ],     15) + "\t" +
                 utils::pp(gridX  (iP, iQ), 15) + "\t" +
@@ -685,7 +685,7 @@ double ActionFinderSpherical::Jr(double E, double L, double *Omegar, double *Ome
 Actions ActionFinderSpherical::actions(const coord::PosVelCyl& point) const
 {
     Actions acts;
-    double E  = pot.value(sqrt(pow_2(point.R) + pow_2(point.z))) + 
+    double E  = pot.value(sqrt(pow_2(point.R) + pow_2(point.z))) +
         0.5 * (pow_2(point.vR) + pow_2(point.vz) + pow_2(point.vphi));
     double L  = Ltotal(point);
     acts.Jphi = Lz(point);
@@ -698,7 +698,7 @@ ActionAngles ActionFinderSpherical::actionAngles(
     const coord::PosVelCyl& point, Frequencies* freq) const
 {
     Actions acts;
-    double E  = pot.value(sqrt(pow_2(point.R) + pow_2(point.z))) + 
+    double E  = pot.value(sqrt(pow_2(point.R) + pow_2(point.z))) +
         0.5 * (pow_2(point.vR) + pow_2(point.vz) + pow_2(point.vphi));
     double L  = Ltotal(point);
     double Omegar, Omegaz;
@@ -712,6 +712,14 @@ ActionAngles ActionFinderSpherical::actionAngles(
     Angles angs = computeAngles(point, pot, E, L, R1, R2, Omegar, Omegaz);
     return ActionAngles(acts, angs);
 }
+
+ActionAnglesOrbitParameters ActionFinderSpherical::actionAnglesOrbitParameters(
+     const coord::PosVelCyl& point, Frequencies* freq) const
+ {
+     return ActionAnglesOrbitParameters(actionAngles(point, freq),
+                                        OrbitParameters(0,0,0)); // This is incorrect
+ }
+
 
 double ActionFinderSpherical::E(const Actions& acts) const
 {
@@ -748,7 +756,7 @@ double ActionFinderSpherical::E(const Actions& acts) const
         math::ScaledFnc<math::ScalingInf>(scaling, fnc),
         /*lower limit is Elow, which translates to*/ math::scale(scaling, scaleE(Elow, invPhi0)),
         /*upper limit on scaledE is infinity, which corresponds to*/ 1, ACCURACY_JR);
-    return unscaleE(math::unscale(scaling, zroot), invPhi0);    
+    return unscaleE(math::unscale(scaling, zroot), invPhi0);
 #endif
 }
 
