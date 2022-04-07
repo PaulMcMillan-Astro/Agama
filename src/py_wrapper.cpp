@@ -2755,11 +2755,18 @@ static const char* docstringActionFinder =
     "a somewhat lower accuracy.\n"
     "The () operator computes actions for a given position/velocity point, or array of points.\n"
     "Arguments: a sextet of floats (x,y,z,vx,vy,vz) or an Nx6 array of N such sextets, "
-    "and optionally an 'angles=True' argument if frequencies and angles are also needed "
+    "and optionally 'angles=True' argument if frequencies and angles are also needed, "
+    "and 'orbitparameters=True' argument if Rmin, Rmax and Zmax are also needed "
     "(requires extra computations).\n"
-    "Returns: if angles are not computed, a single Nx3 array of floats "
-    "(for each point: Jr, Jz, Jphi); in the opposite case, a tuple of three Nx3 arrays: "
-    "actions, angles, and frequencies (in the same order - r,z,phi).";
+    "Returns: if angles and orbitparameters are not computed, a single Nx3 array of floats "
+    "(for each point: Jr, Jz, Jphi); in the case angles=True, a tuple of three Nx3 arrays: "
+    "actions, angles, and frequencies (in the same order - r,z,phi).\n"
+    "If additionally orbitparameters=True, a tuple of four Nx3 arrays: "
+    "actions, angles, orbitparameters and frequencies, with orbitparamaters containing "
+    "Rmin, Rmax, Zmax in that order computed from the Staeckel approximation "
+    "following the method of Mackereth & Bovy, 2018, PASP 130, 993, pp. 114501\n"
+    "At the moment the functionality corresponding to orbitparamters=True and Angles=False "
+    "is not implemented\n";
 
 /// \cond INTERNAL_DOCS
 /// Python type corresponding to ActionFinder class
